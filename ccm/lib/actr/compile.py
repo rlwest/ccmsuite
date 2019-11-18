@@ -11,23 +11,27 @@ class CompiledProduction(Production):
 
         code1=[]
         for k,v in pre_bound.items():
-            code1.append(' %s=%s'%(k,`v`))
-        code1.append(' if True:  # compiled from %s'%pre.name)    
+            code1.append(' %s=%s'%(k,repr(v)))
+        code1.append(' if True:  # compiled from %s'%pre.name)
+        added_line = False
         for line in pre.code.splitlines():
             for k in keep:
                 if line.strip().startswith(k):
                     code1.append('  '+line)
+                    added_line = True
                     break
+        if not added_line:
+            code1.append('  pass')
 
         code1='\n'.join(code1)
         for k,v in pre_bound.items():
             code1=code1.replace('?'+k,v)
 
 
-            
-        code2=[]    
+
+        code2=[]
         for k,v in post_bound.items():
-            code2.append(' %s=%s'%(k,`v`))
+            code2.append(' %s=%s'%(k,repr(v)))
         code2.append(' if True:  # compiled from %s'%post.name)
         for line in post.code.splitlines():
             if len(line.strip())>0:
@@ -41,14 +45,14 @@ class CompiledProduction(Production):
 
         self.func=compile(self.code,'<production-%s>'%self.name,'exec')
 
-        
+
         keys=list(pre.keys)
         patterns={}
         for buf,pat in pre.pattern_specs.items():
             for k,v in pre_bound.items():
                 pat=pat.replace('?'+k,v)
             patterns[buf]=pat
-            
+
         for m in post.keys:
             if m==retrieve: pass
             elif m not in keys:
@@ -57,14 +61,14 @@ class CompiledProduction(Production):
                 for k,v in post_bound.items():
                     pat=pat.replace('?'+k,v)
                 patterns[buf]=pat
-                
+
         self.keys=keys
         self.pattern_specs=patterns
         self.pattern=Pattern(patterns)
-       
-      
 
-        
+
+
+
 
 class PMCompile(ProceduralSubModule):
     def __init__(self,keep,request,retrieve):
@@ -112,7 +116,7 @@ class PMCompile(ProceduralSubModule):
         if prod in self.pre:
             self._previous=prod
             self._previousBound=dict(prod.bound)
-            
+
     def compile(self,pre,pre_bound,post,post_bound):
         id=(pre,post,tuple(sorted(pre_bound.items())),tuple(sorted(post_bound.items())))
         p=self.compiled.get(id,None)
@@ -125,4 +129,4 @@ class PMCompile(ProceduralSubModule):
             for a in self.parent._adaptors:
                 a.create(p,parents=[pre,post])
             self.parent._productions.append(p)
-        
+
